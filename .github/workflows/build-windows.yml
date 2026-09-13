@@ -1,6 +1,8 @@
-name: Build QureMed Studio Windows
+name: Build QureMED Studio Windows
 
 on:
+  push:
+    branches: [main, "feature/**"]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -8,9 +10,10 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,12 +27,16 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build Windows packages
-        run: npm run dist:win
+      - name: TypeScript and Vite build
+        run: npm run build
 
-      - name: Upload QureMed Studio EXE
+      - name: Build Windows packages
+        run: npx electron-builder --win nsis portable
+
+      - name: Upload QureMED Studio EXE
         uses: actions/upload-artifact@v4
         with:
-          name: QureMed-Studio-Windows
+          name: QureMED-Studio-Windows
           path: release/*.exe
           if-no-files-found: error
+          retention-days: 14
