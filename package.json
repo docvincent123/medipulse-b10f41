@@ -2,6 +2,7 @@
   "name": "quremed-studio",
   "version": "0.2.0",
   "private": true,
+  "author": "QureMED Industries",
   "description": "QureMED Industries Windows launcher, store, update center and support hub",
   "main": "electron/main.cjs",
   "scripts": {
@@ -40,15 +41,18 @@
       "package.json"
     ],
     "win": {
-      "target": ["nsis", "portable"],
-      "artifactName": "QureMED-Studio-${version}-${arch}.${ext}"
+      "target": ["nsis", "portable"]
     },
     "nsis": {
+      "artifactName": "QureMED-Studio-Setup-${version}-${arch}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "QureMED Studio"
+    },
+    "portable": {
+      "artifactName": "QureMED-Studio-Portable-${version}-${arch}.${ext}"
     }
   }
 }
