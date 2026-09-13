@@ -1,5 +1,6 @@
 export type ProductChannel = 'Stable' | 'Beta';
 export type ProductCategory = 'Clinical' | 'Education' | 'Diagnostics' | 'Platform';
+export type LicenseType = 'free' | 'pro' | 'clinic' | 'preview';
 
 export type Product = {
   id: string;
@@ -12,9 +13,12 @@ export type Product = {
   size: string;
   accent: string;
   icon: 'rehab' | 'calc' | 'case' | 'ecg' | 'glasses';
+  licenseType: LicenseType;
+  licenseLabel: string;
   priceLabel: string;
   releaseNotes: string[];
   featured?: boolean;
+  status?: 'available' | 'coming-soon';
 };
 
 export const catalog: Product[] = [
@@ -22,71 +26,83 @@ export const catalog: Product[] = [
     id: 'rehaflow',
     name: 'RehaFlow',
     shortName: 'RF',
-    description: 'Rehabilitation center operations, patient workflows and staff coordination.',
+    description: 'Rehabilitation center operations, patient workflows, staff coordination and local-first clinical infrastructure.',
     category: 'Clinical',
     channel: 'Stable',
     latestVersion: '2.4.1',
     size: '186 MB',
-    accent: '#34d399',
+    accent: '#31d6a6',
     icon: 'rehab',
+    licenseType: 'clinic',
+    licenseLabel: 'Clinic',
     priceLabel: 'Clinic license',
     featured: true,
-    releaseNotes: ['Faster local sync', 'Improved discharge reports', 'Device enrollment fixes'],
+    releaseNotes: ['Faster local sync', 'Improved discharge reports', 'Device enrollment and TLS diagnostics'],
   },
   {
     id: 'medical-calculator',
     name: 'Medical Calculator Pro',
     shortName: 'MC',
-    description: 'Clinical scores, infusion math, dose tools and structured chart-ready results.',
+    description: 'Clinical scores, infusion math, dose tools and structured chart-ready results in one fast Windows workspace.',
     category: 'Clinical',
     channel: 'Beta',
     latestVersion: '0.8.0',
     size: '92 MB',
-    accent: '#22d3ee',
+    accent: '#45b8ff',
     icon: 'calc',
-    priceLabel: 'Free · Pro available',
-    releaseNotes: ['Added NEWS2 and GCS', 'Pro demo entitlement', 'New chart-text generator'],
+    licenseType: 'pro',
+    licenseLabel: 'Free + Pro',
+    priceLabel: 'Free · Pro upgrade',
+    releaseNotes: ['NEWS2 and GCS', 'Pro entitlement surface', 'Chart-text generator'],
   },
   {
     id: 'caselab',
     name: 'CaseLab',
     shortName: 'CL',
-    description: 'Interactive medical scenarios for emergency care, cardiology and training.',
+    description: 'Interactive emergency-care and cardiology cases for training, assessment and scenario rehearsal.',
     category: 'Education',
     channel: 'Beta',
     latestVersion: '0.5.3',
     size: '128 MB',
-    accent: '#a78bfa',
+    accent: '#9b87ff',
     icon: 'case',
+    licenseType: 'free',
+    licenseLabel: 'Free',
     priceLabel: 'Free starter pack',
-    releaseNotes: ['Scenario timeline', 'Assessment mode', 'Pack marketplace foundation'],
+    releaseNotes: ['Scenario timeline', 'Assessment mode', 'Content-pack foundation'],
   },
   {
     id: 'ecg-studio',
     name: 'ECG Studio',
     shortName: 'ECG',
-    description: 'ECG viewing, measurement, teaching overlays and case organization.',
+    description: 'ECG viewing, measurement, teaching overlays and case organization for study and clinical review.',
     category: 'Diagnostics',
     channel: 'Beta',
     latestVersion: '0.3.0',
     size: '104 MB',
-    accent: '#fb7185',
+    accent: '#ff7b91',
     icon: 'ecg',
-    priceLabel: 'Preview',
+    licenseType: 'preview',
+    licenseLabel: 'Preview',
+    priceLabel: 'Preview access',
+    status: 'coming-soon',
     releaseNotes: ['Caliper tool', 'QT/QTc workspace', 'Case library'],
   },
   {
-    id: 'glasses-lab',
-    name: 'QureMed Vision Lab',
+    id: 'vision-lab',
+    name: 'QureMED Vision Lab',
     shortName: 'VL',
-    description: 'Companion tools for accessibility glasses, sensors and experimental hardware.',
+    description: 'Companion tools for accessibility glasses, sensors, camera workflows and experimental hardware.',
     category: 'Platform',
     channel: 'Beta',
     latestVersion: '0.1.2',
     size: '74 MB',
-    accent: '#fbbf24',
+    accent: '#f4be53',
     icon: 'glasses',
+    licenseType: 'preview',
+    licenseLabel: 'Internal preview',
     priceLabel: 'Internal preview',
-    releaseNotes: ['Device bridge shell', 'Sensor status cards', 'Voice response mock flow'],
+    status: 'coming-soon',
+    releaseNotes: ['Device bridge shell', 'Sensor status cards', 'Voice-response workflow'],
   },
 ];
