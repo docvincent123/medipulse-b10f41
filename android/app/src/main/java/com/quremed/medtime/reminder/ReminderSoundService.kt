@@ -10,6 +10,7 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.quremed.medtime.MainActivity
@@ -34,7 +35,7 @@ class ReminderSoundService : Service() {
         if (intent?.action == ACTION_TEST) {
             startForeground(NOTIFICATION_ID, testNotification())
             playSound(store.customSoundUri())
-            return START_NOT_STICKY
+            return START_STICKY
         }
 
         val medicationId = intent?.getStringExtra(ReminderScheduler.EXTRA_MEDICATION_ID)
@@ -43,7 +44,7 @@ class ReminderSoundService : Service() {
 
         startForeground(NOTIFICATION_ID, notification(medicationId, medication.name, medication.dose))
         playSound(store.customSoundUri())
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
     private fun notification(medicationId: String, name: String, dose: String) =
@@ -143,6 +144,8 @@ class ReminderSoundService : Service() {
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build()
                 )
+                setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
+                setVolume(1f, 1f)
                 if (customUri != null) {
                     setDataSource(this@ReminderSoundService, customUri)
                     prepare()
@@ -157,6 +160,8 @@ class ReminderSoundService : Service() {
             }
         }.getOrElse {
             MediaPlayer.create(this, R.raw.medicine_alarm)?.apply {
+                setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
+                setVolume(1f, 1f)
                 isLooping = true
                 start()
             }
