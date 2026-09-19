@@ -59,6 +59,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -72,6 +73,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,6 +91,7 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import com.quremed.medtime.cloud.CloudClient
 import com.quremed.medtime.data.AppStore
 import com.quremed.medtime.data.IntakeLog
 import com.quremed.medtime.data.Medication
@@ -97,11 +100,14 @@ import com.quremed.medtime.data.RelativeConnection
 import com.quremed.medtime.data.UserProfile
 import com.quremed.medtime.reminder.ReminderScheduler
 import com.quremed.medtime.reminder.ReminderSoundService
+import com.quremed.medtime.ui.ArchiveScreen
+import com.quremed.medtime.ui.FamilyCloudScreen
 import com.quremed.medtime.ui.MedTimeTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var store: AppStore
@@ -178,6 +184,21 @@ private fun MedTimeApp(
     val relatives = remember(refreshKey) { store.relatives() }
     var selectedTab by remember { mutableStateOf(Tab.TODAY) }
     var addMedicine by remember { mutableStateOf(false) }
+    var showArchive by remember { mutableStateOf(false) }
+    val cloudScope = rememberCoroutineScope()
+
+    fun syncCloudOwner() {
+        val share = store.cloudOwnerShare() ?: return
+        val currentProfile = store.profile() ?: return
+        cloudScope.launch {
+            CloudClient.updateOwnerShare(
+                share = share,
+                profile = currentProfile,
+                medicines = store.medications(),
+                logs = store.logs()
+            )
+        }
+    }
 
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -238,10 +259,21 @@ private fun MedTimeApp(
                 NavigationBar(containerColor = Color(0xF20A141D)) {
                     Tab.entries.forEach { tab ->
                         NavigationBarItem(
-                            selected = selectedTab == tab,
-                            onClick = { selectedTab = tab },
+                            selected = selectedTab == tab && !showArchive,
+                            onClick = {
+                                selectedTab = tab
+                                showArchive = false
+                            },
                             icon = { Icon(tab.icon, tab.title) },
-                            label = { Text(tab.title) }
+                            label = { Text(tab.title) },
+                            alwaysShowLabel = true,
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         )
                     }
                 }
@@ -254,17 +286,36 @@ private fun MedTimeApp(
                 }
             }
         ) { innerPadding ->
-            when (selectedTab) {
-                Tab.TODAY -> TodayPage(profile, medicines, logs, Modifier.padding(innerPadding)) {
-                    addMedicine = true
+            if (showArchive) {
+                ArchiveScreen(
+                    logs = logs,
+                    modifier = Modifier.padding(innerPadding),
+                    onBack = { showArchive = false }
+                )
+            } else {
+                when (selectedTab) {
+                    Tab.TODAY -> TodayPage(
+                        profile = profile,
+                        medicines = medicines,
+                        logs = logs,
+                        modifier = Modifier.padding(innerPadding),
+                        add = { addMedicine = true },
+                        openArchive = { showArchive = true }
+                    )
+                    Tab.MEDS -> MedicinesPage(medicines, Modifier.padding(innerPadding)) { medicine ->
+                        ReminderScheduler.cancel(context, medicine.id)
+                        store.deleteMedication(medicine.id)
+                        syncCloudOwner()
+                        refresh()
+                    }
+                    Tab.FAMILY -> FamilyCloudScreen(
+                        store = store,
+                        refreshKey = refreshKey,
+                        modifier = Modifier.padding(innerPadding),
+                        onRefresh = refresh
+                    )
+                    Tab.SETTINGS -> SettingsPage(store, refreshKey, Modifier.padding(innerPadding), refresh)
                 }
-                Tab.MEDS -> MedicinesPage(medicines, Modifier.padding(innerPadding)) { medicine ->
-                    ReminderScheduler.cancel(context, medicine.id)
-                    store.deleteMedication(medicine.id)
-                    refresh()
-                }
-                Tab.FAMILY -> FamilyPage(store, relatives, refreshKey, Modifier.padding(innerPadding), refresh)
-                Tab.SETTINGS -> SettingsPage(store, refreshKey, Modifier.padding(innerPadding), refresh)
             }
         }
     }
@@ -275,6 +326,7 @@ private fun MedTimeApp(
             save = { medicine ->
                 store.addMedication(medicine)
                 ReminderScheduler.scheduleDaily(context, medicine)
+                syncCloudOwner()
                 addMedicine = false
                 refresh()
             }
@@ -290,18 +342,21 @@ private fun MedTimeApp(
                     store.markTaken(medicine.id, reminder.dueAt)
                     ReminderScheduler.scheduleNextDay(context, medicine)
                     ReminderSoundService.stop(context)
+                    syncCloudOwner()
                     closeReminder()
                 },
                 snooze = {
                     store.markSnoozed(medicine.id, reminder.dueAt)
                     ReminderScheduler.scheduleAt(context, medicine.id, System.currentTimeMillis() + 10 * 60 * 1000L)
                     ReminderSoundService.stop(context)
+                    syncCloudOwner()
                     closeReminder()
                 },
                 missed = { reason ->
                     store.markMissed(medicine.id, reminder.dueAt, reason)
                     ReminderScheduler.scheduleNextDay(context, medicine)
                     ReminderSoundService.stop(context)
+                    syncCloudOwner()
                     closeReminder()
                 }
             )
@@ -371,7 +426,8 @@ private fun TodayPage(
     medicines: List<Medication>,
     logs: List<IntakeLog>,
     modifier: Modifier,
-    add: () -> Unit
+    add: () -> Unit,
+    openArchive: () -> Unit
 ) {
     val next = remember(medicines) { nextMedication(medicines) }
     val startOfDay = remember {
@@ -430,6 +486,16 @@ private fun TodayPage(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatCard("Прийнято", todayLogs.count { it.status == "TAKEN" }, Icons.Rounded.CheckCircle, Modifier.weight(1f))
                 StatCard("Пропущено", todayLogs.count { it.status == "MISSED" }, Icons.Rounded.WarningAmber, Modifier.weight(1f))
+            }
+        }
+        item {
+            OutlinedButton(
+                onClick = openArchive,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Rounded.Schedule, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Архів прийомів по днях")
             }
         }
         item { Text("Сьогодні", fontSize = 21.sp, fontWeight = FontWeight.Bold) }
@@ -690,19 +756,25 @@ private fun SettingsPage(store: AppStore, refreshKey: Int, modifier: Modifier, r
                 "Перевірити нагадування",
                 "Запустить ваш звук і тестове сповіщення"
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = {
-                        ReminderSoundService.startTest(context)
-                        message = "Тестове нагадування запущено"
-                    }) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = {
+                            ReminderSoundService.startTest(context)
+                            message = "Тестове нагадування запущено"
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Icon(Icons.Rounded.NotificationsActive, null)
                         Spacer(Modifier.width(8.dp))
                         Text("Перевірити дзвінок")
                     }
-                    OutlinedButton(onClick = {
-                        ReminderSoundService.stop(context)
-                        message = "Тест зупинено"
-                    }) {
+                    OutlinedButton(
+                        onClick = {
+                            ReminderSoundService.stop(context)
+                            message = "Тест зупинено"
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text("Зупинити")
                     }
                 }
@@ -736,7 +808,7 @@ private fun SettingsPage(store: AppStore, refreshKey: Int, modifier: Modifier, r
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF102733), contentColor = MaterialTheme.colorScheme.onSurface)
             ) {
                 Column(Modifier.padding(22.dp)) {
-                    Text("MedTime 1.0.1", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("MedTime 1.1.0", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                     Text("by QureMED Industries", color = MaterialTheme.colorScheme.primary)
                     Text(
                         "Застосунок нагадує про графік, внесений користувачем, і не замінює консультацію лікаря.",
