@@ -1,0 +1,1 @@
+# MedTime custom ProGuard rules.
