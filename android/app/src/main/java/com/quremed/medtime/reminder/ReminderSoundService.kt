@@ -59,7 +59,7 @@ class ReminderSoundService : Service() {
             .setContentIntent(openAppIntent(medicationId, false))
             .addAction(
                 R.drawable.ic_check,
-                "Прийняв",
+                "Прийняти зараз",
                 broadcastIntent(ReminderActionReceiver.ACTION_TAKEN, medicationId, 1001)
             )
             .addAction(
