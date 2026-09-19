@@ -209,7 +209,11 @@ private fun MedTimeApp(
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        actionIconContentColor = MaterialTheme.colorScheme.onBackground
+                    ),
                     title = {
                         Column {
                             Text("MedTime", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
@@ -318,7 +322,7 @@ private fun RegistrationPage(register: (String) -> Unit) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(30.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xEE10202A))
+            colors = CardDefaults.cardColors(containerColor = Color(0xEE10202A), contentColor = MaterialTheme.colorScheme.onSurface)
         ) {
             Column(Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
@@ -388,7 +392,7 @@ private fun TodayPage(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(26.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF102733))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF102733), contentColor = MaterialTheme.colorScheme.onSurface)
             ) {
                 Column(Modifier.padding(22.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -444,7 +448,7 @@ private fun StatCard(title: String, value: Int, icon: ImageVector, modifier: Mod
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xCC10202A))
+        colors = CardDefaults.cardColors(containerColor = Color(0xCC10202A), contentColor = MaterialTheme.colorScheme.onSurface)
     ) {
         Column(Modifier.padding(18.dp)) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.secondary)
@@ -481,7 +485,7 @@ private fun MedicineCard(medicine: Medication, trailing: (@Composable () -> Unit
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xCC10202A))
+        colors = CardDefaults.cardColors(containerColor = Color(0xCC10202A), contentColor = MaterialTheme.colorScheme.onSurface)
     ) {
         Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -524,7 +528,7 @@ private fun InfoCard(text: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0x9910202A))
+        colors = CardDefaults.cardColors(containerColor = Color(0x9910202A), contentColor = MaterialTheme.colorScheme.onSurface)
     ) {
         Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(22.dp))
     }
@@ -564,7 +568,7 @@ private fun FamilyPage(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(26.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF102733))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF102733), contentColor = MaterialTheme.colorScheme.onSurface)
             ) {
                 Column(Modifier.padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Rounded.QrCode2, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
@@ -610,7 +614,7 @@ private fun FamilyPage(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xCC10202A))
+                colors = CardDefaults.cardColors(containerColor = Color(0xCC10202A), contentColor = MaterialTheme.colorScheme.onSurface)
             ) {
                 Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(
@@ -681,6 +685,36 @@ private fun SettingsPage(store: AppStore, refreshKey: Int, modifier: Modifier, r
             }
         }
         item {
+            SettingCard(
+                Icons.Rounded.NotificationsActive,
+                "Перевірити нагадування",
+                "Запустить ваш звук і тестове сповіщення"
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        ReminderSoundService.startTest(context)
+                        message = "Тестове нагадування запущено"
+                    }) {
+                        Icon(Icons.Rounded.NotificationsActive, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Перевірити дзвінок")
+                    }
+                    OutlinedButton(onClick = {
+                        ReminderSoundService.stop(context)
+                        message = "Тест зупинено"
+                    }) {
+                        Text("Зупинити")
+                    }
+                }
+                Text(
+                    "У сповіщенні буде кнопка «Прийняти зараз». Вона одразу вимикає дзвінок.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+        item {
             SettingCard(Icons.Rounded.Schedule, "Точні нагадування", if (exactAlarm) "Дозвіл активний" else "Потрібно дозволити будильники") {
                 if (!exactAlarm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     Button(onClick = {
@@ -699,10 +733,10 @@ private fun SettingsPage(store: AppStore, refreshKey: Int, modifier: Modifier, r
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF102733))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF102733), contentColor = MaterialTheme.colorScheme.onSurface)
             ) {
                 Column(Modifier.padding(22.dp)) {
-                    Text("MedTime 1.0", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("MedTime 1.0.1", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                     Text("by QureMED Industries", color = MaterialTheme.colorScheme.primary)
                     Text(
                         "Застосунок нагадує про графік, внесений користувачем, і не замінює консультацію лікаря.",
@@ -720,7 +754,7 @@ private fun SettingCard(icon: ImageVector, title: String, subtitle: String, acti
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xCC10202A))
+        colors = CardDefaults.cardColors(containerColor = Color(0xCC10202A), contentColor = MaterialTheme.colorScheme.onSurface)
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
