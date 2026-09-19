@@ -27,6 +27,7 @@ class ReminderActionReceiver : BroadcastReceiver() {
                 )
             }
         }
+        CloudSyncWorker.enqueue(context)
         ReminderSoundService.stop(context)
     }
 
