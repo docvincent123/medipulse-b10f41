@@ -11,6 +11,7 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.quremed.medtime.MainActivity
 import com.quremed.medtime.R
 import com.quremed.medtime.data.AppStore
@@ -29,9 +30,15 @@ class ReminderSoundService : Service() {
             return START_NOT_STICKY
         }
 
+        val store = AppStore(this)
+        if (intent?.action == ACTION_TEST) {
+            startForeground(NOTIFICATION_ID, testNotification())
+            playSound(store.customSoundUri())
+            return START_NOT_STICKY
+        }
+
         val medicationId = intent?.getStringExtra(ReminderScheduler.EXTRA_MEDICATION_ID)
             ?: return START_NOT_STICKY
-        val store = AppStore(this)
         val medication = store.medication(medicationId) ?: return START_NOT_STICKY
 
         startForeground(NOTIFICATION_ID, notification(medicationId, medication.name, medication.dose))
@@ -52,7 +59,7 @@ class ReminderSoundService : Service() {
             .setContentIntent(openAppIntent(medicationId, false))
             .addAction(
                 R.drawable.ic_check,
-                "Прийняв",
+                "Прийняти зараз",
                 broadcastIntent(ReminderActionReceiver.ACTION_TAKEN, medicationId, 1001)
             )
             .addAction(
@@ -64,6 +71,38 @@ class ReminderSoundService : Service() {
                 R.drawable.ic_close,
                 "Не прийняв",
                 openAppIntent(medicationId, true)
+            )
+            .build()
+
+    private fun testNotification() =
+        NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("MedTime • тест нагадування")
+            .setContentText("Час прийняти ліки. Перевірка звуку та сповіщення.")
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    9401,
+                    Intent(this, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    },
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            )
+            .addAction(
+                R.drawable.ic_check,
+                "Прийняти зараз",
+                PendingIntent.getBroadcast(
+                    this,
+                    9402,
+                    Intent(this, TestReminderReceiver::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
             )
             .build()
 
@@ -158,8 +197,16 @@ class ReminderSoundService : Service() {
     companion object {
         const val ACTION_START = "com.quremed.medtime.service.START"
         const val ACTION_STOP = "com.quremed.medtime.service.STOP"
+        const val ACTION_TEST = "com.quremed.medtime.service.TEST"
         private const val CHANNEL_ID = "medtime_reminders"
         private const val NOTIFICATION_ID = 9400
+
+        fun startTest(context: Context) {
+            val intent = Intent(context, ReminderSoundService::class.java).apply {
+                action = ACTION_TEST
+            }
+            ContextCompat.startForegroundService(context, intent)
+        }
 
         fun stop(context: Context) {
             context.stopService(Intent(context, ReminderSoundService::class.java))
