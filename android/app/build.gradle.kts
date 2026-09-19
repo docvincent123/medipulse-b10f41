@@ -49,6 +49,28 @@ android {
     }
 }
 
+val generatedMedTimeRes = layout.buildDirectory.dir("generated/medtime/res")
+android.sourceSets["main"].res.srcDir(generatedMedTimeRes)
+
+val decodeMedicineAlarm by tasks.registering {
+    val inputFile = layout.projectDirectory.file("src/main/sound/medicine_alarm.b64")
+    val outputFile = generatedMedTimeRes.map { it.file("raw/medicine_alarm.mp3") }
+
+    inputs.file(inputFile)
+    outputs.file(outputFile)
+
+    doLast {
+        val destination = outputFile.get().asFile
+        destination.parentFile.mkdirs()
+        val encoded = inputFile.asFile.readText().trim()
+        destination.writeBytes(java.util.Base64.getDecoder().decode(encoded))
+    }
+}
+
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn(decodeMedicineAlarm)
+}
+
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.activity:activity-compose:1.10.0")
