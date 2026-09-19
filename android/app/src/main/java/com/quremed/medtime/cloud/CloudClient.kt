@@ -118,14 +118,10 @@ object CloudClient {
                 val server = requireNotNull(relative.cloudServer)
                 val shareId = requireNotNull(relative.cloudShareId)
                 val token = requireNotNull(relative.viewerToken)
-                val url = Uri.parse("${normalizeServer(server)}/v1/shares/$shareId")
-                    .buildUpon()
-                    .appendQueryParameter("token", token)
-                    .build()
-                    .toString()
+                val url = "${normalizeServer(server)}/v1/shares/$shareId"
 
                 val snapshot = json.decodeFromString<CloudSnapshot>(
-                    request(method = "GET", url = url)
+                    request(method = "GET", url = url, bearerToken = token)
                 )
                 relative.copy(
                     ownerId = snapshot.ownerId,
