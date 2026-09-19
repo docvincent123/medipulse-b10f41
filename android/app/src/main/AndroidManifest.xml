@@ -40,6 +40,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".reminder.TestReminderReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".reminder.BootReceiver"
             android:enabled="true"
             android:exported="true">
