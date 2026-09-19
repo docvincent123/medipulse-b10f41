@@ -14,11 +14,14 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required");
 }
 
+const databaseUrl = process.env.DATABASE_URL;
+const useSsl =
+  process.env.PGSSL === "require" ||
+  databaseUrl.includes("sslmode=require");
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production"
-    ? { rejectUnauthorized: false }
-    : false,
+  connectionString: databaseUrl,
+  ssl: useSsl ? { rejectUnauthorized: false } : false,
   max: 10
 });
 
