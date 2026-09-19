@@ -889,7 +889,7 @@ private fun ReminderDialog(
                 Button(onClick = taken) {
                     Icon(Icons.Rounded.CheckCircle, null)
                     Spacer(Modifier.width(6.dp))
-                    Text("Прийняв")
+                    Text("Прийняти зараз")
                 }
             }
         },
