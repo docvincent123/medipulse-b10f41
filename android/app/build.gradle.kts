@@ -1,3 +1,5 @@
+import java.util.Base64
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -63,7 +65,7 @@ val decodeMedicineAlarm by tasks.registering {
         val destination = outputFile.get().asFile
         destination.parentFile.mkdirs()
         val encoded = inputFile.asFile.readText().trim()
-        destination.writeBytes(java.util.Base64.getDecoder().decode(encoded))
+        destination.writeBytes(Base64.getDecoder().decode(encoded))
     }
 }
 
