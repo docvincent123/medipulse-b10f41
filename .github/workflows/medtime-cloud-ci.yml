@@ -1,0 +1,38 @@
+name: MedTime Cloud CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - feature/medtime-1.1-archive-cloud
+    paths:
+      - "medtime-cloud/**"
+      - "render.yaml"
+      - ".github/workflows/medtime-cloud-ci.yml"
+  pull_request:
+    paths:
+      - "medtime-cloud/**"
+      - "render.yaml"
+      - ".github/workflows/medtime-cloud-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: medtime-cloud/package.json
+      - name: Install dependencies
+        working-directory: medtime-cloud
+        run: npm install
+      - name: Check server syntax
+        working-directory: medtime-cloud
+        run: node --check src/server.js
