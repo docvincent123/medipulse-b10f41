@@ -45,7 +45,21 @@ data class RelativeConnection(
     val ownerId: String,
     val ownerName: String,
     val connectedAt: Long = System.currentTimeMillis(),
-    val medicinesSnapshot: List<Medication> = emptyList()
+    val medicinesSnapshot: List<Medication> = emptyList(),
+    val logsSnapshot: List<IntakeLog> = emptyList(),
+    val cloudServer: String? = null,
+    val cloudShareId: String? = null,
+    val viewerToken: String? = null,
+    val lastSyncAt: Long? = null
+)
+
+@Serializable
+data class CloudOwnerShare(
+    val serverUrl: String,
+    val shareId: String,
+    val ownerToken: String,
+    val viewerToken: String,
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 @Serializable
@@ -160,8 +174,27 @@ class AppStore(context: Context) {
     fun relatives(): List<RelativeConnection> = decode<List<RelativeConnection>>(KEY_RELATIVES).orEmpty()
 
     fun addRelative(relative: RelativeConnection) {
-        val updated = relatives().filterNot { it.ownerId == relative.ownerId } + relative
+        val updated = relatives().filterNot {
+            (relative.cloudShareId != null && it.cloudShareId == relative.cloudShareId) ||
+                (relative.cloudShareId == null && it.ownerId == relative.ownerId)
+        } + relative
         encode(KEY_RELATIVES, updated)
+    }
+
+    fun cloudServerUrl(): String = prefs.getString(KEY_CLOUD_SERVER, "").orEmpty()
+
+    fun setCloudServerUrl(url: String) {
+        prefs.edit().putString(KEY_CLOUD_SERVER, url.trim().trimEnd('/')).apply()
+    }
+
+    fun cloudOwnerShare(): CloudOwnerShare? = decode(KEY_CLOUD_OWNER_SHARE)
+
+    fun saveCloudOwnerShare(share: CloudOwnerShare?) {
+        if (share == null) {
+            prefs.edit().remove(KEY_CLOUD_OWNER_SHARE).apply()
+        } else {
+            encode(KEY_CLOUD_OWNER_SHARE, share)
+        }
     }
 
     fun customSoundUri(): Uri? = prefs.getString(KEY_CUSTOM_SOUND, null)?.let(Uri::parse)
@@ -218,5 +251,7 @@ class AppStore(context: Context) {
         private const val KEY_RELATIVES = "relatives"
         private const val KEY_PENDING = "pending"
         private const val KEY_CUSTOM_SOUND = "custom_sound_uri"
+        private const val KEY_CLOUD_SERVER = "cloud_server_url"
+        private const val KEY_CLOUD_OWNER_SHARE = "cloud_owner_share"
     }
 }
