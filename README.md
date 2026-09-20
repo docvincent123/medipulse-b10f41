@@ -1,33 +1,28 @@
-# QureMed Studio
+# QureMED Studio
 
-QureMed Studio is the Windows launcher, app library, store and update center for QureMed Industries products.
+QureMED Studio is the Windows launcher, product library, store, update center, newsroom and support hub for QureMED Industries software.
 
-## Current v0.1
+## v0.2 scope
 
-- Premium React desktop UI
-- Electron Windows shell
-- Home / Library / Updates / Store / Developer / Settings
-- Local product registry
-- Install / Open / Update states
-- Animated package progress
-- Stable and Beta channels
-- Release notes
-- Developer Release Studio draft UI
-- Windows `.exe` packaging workflow
+- React + TypeScript + Vite interface in a sandboxed Electron desktop shell
+- Home dashboard and unified QureMED Store
+- Separate Library for installed/linked applications
+- Free / Pro / Clinic / Preview product tiers
+- Product update center with release notes
+- Newsroom for product and company updates
+- Support center with safe diagnostic JSON export
+- Installed-version registry persisted under the Windows user profile
+- One-time executable linking so Studio can launch locally installed products
+- Developer Release Studio draft screen for future package publishing
+- GitHub Actions build for NSIS installer + portable Windows `.exe`
 
-Included catalog:
+## Current product catalog
+
 - RehaFlow
 - Medical Calculator Pro
 - CaseLab
 - ECG Studio
-- QureMed Vision Lab
-
-## Stack
-
-- React + TypeScript + Vite
-- Electron
-- electron-builder
-- GitHub Actions
+- QureMED Vision Lab
 
 ## Run locally
 
@@ -36,50 +31,49 @@ npm install
 npm run dev
 ```
 
-## Build frontend
+## Build the frontend
 
 ```bash
 npm run build
 ```
 
-## Build Windows EXE
+## Build Windows packages
 
 ```bash
 npm install
 npm run dist:win
 ```
 
-Windows artifacts are written to `release/` as an NSIS installer and a portable `.exe`.
+Artifacts are written to `release/`.
 
-## Update architecture
+## Desktop data
 
-The first version stores installed product versions locally and simulates install/update progress. The next integration phase will replace that demo transport with real signed release packages.
+The Electron main process stores the installed-product registry in the app's Windows `userData` folder as `product-registry.json`. The renderer does not get Node.js access. It communicates through a narrow preload IPC bridge.
 
-Planned production flow:
+The support page can export a JSON diagnostic bundle containing the Studio version, installed product versions, update state and non-secret preferences. It intentionally excludes passwords, API keys and clinical/patient content.
 
-1. QureMed developer uploads a product package.
-2. Release metadata contains version, channel, notes, package URL and SHA-256.
-3. QureMed Studio compares the remote manifest with the local registry.
-4. Studio downloads the package to a temporary directory.
-5. SHA-256 and signature are verified.
-6. The old app is closed, the new package is installed, and the local registry is updated.
-7. Previous versions remain available for rollback.
+## Package distribution roadmap
 
-## Security direction
+v0.2 establishes the desktop product model and local launcher behavior. The next integration phase is the production distribution layer:
 
-- Electron context isolation enabled
-- Node integration disabled in renderer
-- Sandboxed renderer
-- Only HTTPS external URLs allowed through the preload bridge
-- Package hash verification planned before real installers are enabled
+1. Move catalog and news data to a QureMED API or signed remote manifest.
+2. Add QureMED ID authentication and license entitlements.
+3. Upload Windows installers per product/version/channel.
+4. Generate SHA-256 hashes and signatures for each release.
+5. Download packages to a temporary directory from Studio.
+6. Verify hash/signature before install.
+7. Run installer silently or interactively according to package policy.
+8. Keep rollback metadata for the previous version.
+9. Add code signing for QureMED Studio and product installers.
 
-## Next phase
+Until signed package delivery is connected, the UI's install/update progress represents catalog registration rather than an unattended remote installer. Already installed applications can be linked to their `.exe` and launched for real from Library.
 
-- Real GitHub Releases or QureMed API-backed manifests
-- Real package downloads and installation
-- SHA-256 verification
-- Rollback
-- QureMed ID / licensing
-- Product icons
-- Windows code signing
-- Developer Console publishing backend
+## Security baseline
+
+- `contextIsolation: true`
+- `nodeIntegration: false`
+- sandboxed renderer
+- renderer receives only explicit IPC methods from `preload.cjs`
+- external links restricted to HTTPS / mailto
+- executable launcher accepts `.exe` paths only and checks that the file exists
+- diagnostics export is user-initiated through a save dialog
